@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict
 from pathlib import Path
-from models.code_elements import ParsedFile
+from app.models.code_elements import ParsedFile
 
 class BaseParser(ABC):
     """Interface for all language-specific parsers."""

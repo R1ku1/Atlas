@@ -1,7 +1,7 @@
 import ast
 from typing import List, Optional
-from models.code_elements import CodeElement, ParsedFile
-from parsers.base_parser import BaseParser
+from app.models.code_elements import CodeElement, ParsedFile
+from app.services.parsers.base_parser import BaseParser
 
 class PythonParser(BaseParser):
     

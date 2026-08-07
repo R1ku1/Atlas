@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
-from backend.app.services.repository_scanner import FileMetadata
+from app.services.repository_scanner import FileMetadata
 from services.file_reader import FileReader
 import os
 
@@ -88,3 +88,21 @@ class SourceFile:
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
+
+    @classmethod
+    def from_reader(cls, reader: 'FileReader', metadata: 'FileMetadata', base_path: str) -> 'SourceFile':
+        """Build a lazy-loading SourceFile from scan metadata, without reading content yet."""
+        full_path = os.path.join(base_path, metadata.path) if base_path else metadata.path
+        return cls(
+            path=metadata.path,
+            name=metadata.name,
+            extension=metadata.extension,
+            size=metadata.size,
+            metadata=metadata,
+            content=None,
+            encoding=None,
+            line_count=None,
+            _full_path=full_path,
+            _reader=reader,
+            _content_loaded=False,
+        )

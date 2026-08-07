@@ -2,7 +2,7 @@ import os
 import chardet
 from typing import Dict, Optional, List
 from dataclasses import dataclass
-from backend.app.services.repository_scanner import FileMetadata
+from app.services.repository_scanner import FileMetadata
 
 
 @dataclass

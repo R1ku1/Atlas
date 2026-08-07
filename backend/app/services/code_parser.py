@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict
-from models.code_elements import ParsedFile
-from parsers.base_parser import BaseParser
-from parsers.python_parser import PythonParser
+from app.models.code_elements import ParsedFile
+from app.services.parsers.base_parser import BaseParser
+from app.services.parsers.python_parser import PythonParser
 
 class CodeParser:
     def __init__(self):

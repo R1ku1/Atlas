@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 from models.code_elements import CodeElement
-from services.tokenizer_adapter import EmbeddingTokenizer
-from services.code_splitter import CodeSplitter
+from app.services.tokenizer_adapter import EmbeddingTokenizer
+from app.services.code_splitter import CodeSplitter
 
 class PythonCodeSplitter(CodeSplitter):
     def __init__(self, tokenizer: EmbeddingTokenizer, max_tokens: int = 512, 

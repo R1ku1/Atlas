@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from models.code_elements import CodeElement
+from app.models.code_elements import CodeElement
 
 class CodeSplitter(ABC):
     @abstractmethod

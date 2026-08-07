@@ -1,7 +1,7 @@
 import hashlib
 from typing import List
-from models.chunk import Chunk
-from models.code_elements import ParsedFile
+from app.models.chunk import Chunk
+from app.models.code_elements import ParsedFile
 
 class CodeChunker:
     """Converts parsed code elements into semantic chunks."""
