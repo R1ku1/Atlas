@@ -1,1 +1,112 @@
+# =========================
+# Python
+# =========================
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python package/build files
+build/
+dist/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checking / linting
+.mypy_cache/
+.ruff_cache/
+
+
+# =========================
+# Environment Variables
+# =========================
+
+.env
+.env.*
+!.env.example
+
+
+# =========================
+# Databases / Local Storage
+# =========================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector databases
+chroma/
+.chromadb/
+*.bin
+
+
+# =========================
+# Frontend (Node / React)
+# =========================
+
+node_modules/
+dist/
+build/
+
+# Vite
+.vite/
+
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================
+# IDEs / Editors
+# =========================
+
+.vscode/
+.idea/
+
+# =========================
+# OS Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# Logs
+# =========================
+
+*.log
 *.pdf
+
+
+# =========================
+# AI / Model Files
+# =========================
+
+# Local model downloads
+models/
+*.gguf
+*.bin
+*.safetensors
+
+
+# =========================
+# Temporary files
+# =========================
+
+tmp/
+temp/
+*.tmp
