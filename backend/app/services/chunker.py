@@ -50,7 +50,7 @@ class CodeChunker:
                       extra_context=None) -> Chunk:
         """Build a single chunk from a code element."""
         # Generate unique ID
-        raw_id = f"{parsed_file.file_path}:{element.name}:{element.type}"
+        raw_id = f"{parsed_file.file_path}:{element.name}:{element.type}:{element.start_line}"
         chunk_id = hashlib.md5(raw_id.encode()).hexdigest()[:12]
         
         # Build chunk content: optionally prepend class context
