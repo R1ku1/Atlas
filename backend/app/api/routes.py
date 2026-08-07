@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.respository_scanner import RepositoryScanner
+from backend.app.services.repository_scanner import RepositoryScanner
 from app.services.file_reader import FileReader
 from app.services.code_parser import CodeParser
 

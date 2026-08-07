@@ -2,7 +2,7 @@ import os
 import chardet
 from typing import Dict, Optional, List
 from dataclasses import dataclass
-from app.services.respository_scanner import FileMetadata
+from backend.app.services.repository_scanner import FileMetadata
 
 
 @dataclass
@@ -210,7 +210,23 @@ class FileReader:
         """
         file_paths = [meta.path for meta in files_metadata]
         return self.read_batch(file_paths, base_path)
-    
+
+    def read_raw(self, file_path: str, encoding: str = None) -> str:
+        """
+        Force-read a file's content (used by lazy loading).
+        
+        Args:
+            file_path: Absolute path to the file
+            encoding: File encoding (detected if not provided)
+            
+        Returns:
+            File content as string
+        """
+        if encoding is None:
+            encoding = self._detect_encoding(file_path)
+        
+        return self._read_content(file_path, encoding)
+        
     def _resolve_path(self, file_path: str, base_path: Optional[str] = None) -> str:
         """Resolve file path, handling relative paths."""
         if os.path.isabs(file_path):
@@ -289,7 +305,7 @@ class FileReader:
 
 # Example usage and integration with RepositoryScanner
 if __name__ == "__main__":
-    from app.services.respository_scanner import RepositoryScanner
+    from backend.app.services.repository_scanner import RepositoryScanner
     
     # Initialize both services
     scanner = RepositoryScanner()

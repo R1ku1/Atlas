@@ -1,41 +1,90 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
-from services.file_reader import FileReader 
-from services.respository_scanner import FileMetadata
+from backend.app.services.repository_scanner import FileMetadata
+from services.file_reader import FileReader
+import os
 
 @dataclass
 class SourceFile:
-    """Lightweight reference to a source file. Content is loaded lazily."""
+    """Represents a source file with optional lazy-loaded content."""
     path: str
     name: str
     extension: str
     size: int
-    encoding: str
-    metadata: 'FileMetadata'          # from scanner
-    _content: Optional[str] = field(default=None, repr=False)
+    metadata: 'FileMetadata'
+    
+    # Content-related fields (can be None for lazy loading)
+    content: Optional[str] = None
+    encoding: Optional[str] = None
+    line_count: Optional[int] = None
+    
+    # Internal fields for lazy loading
+    _full_path: Optional[str] = field(default=None, repr=False)
     _reader: Optional['FileReader'] = field(default=None, repr=False)
-
-    def get_content(self) -> str:
-        """Lazy-load file content and cache it."""
-        if self._content is None:
-            if self._reader is None:
-                raise ValueError("No FileReader assigned for lazy loading.")
-            # Use the reader to read this file
-            # We assume the reader has a method to read a specific file path
-            self._content = self._reader.read_raw(self.path, self.encoding)
-        return self._content
-
-    @classmethod
-    def from_reader(cls, reader: 'FileReader', file_metadata: 'FileMetadata',
-                    base_path: str) -> 'SourceFile':
-        """Create a SourceFile without loading content."""
-        full_path = reader._resolve_path(file_metadata.path, base_path)
-        return cls(
-            path=file_metadata.path,
-            name=file_metadata.name,
-            extension=file_metadata.extension,
-            size=file_metadata.size,
-            encoding='utf-8',  # we'll detect later if needed
-            metadata=file_metadata,
-            _reader=reader
-        )
+    _content_loaded: bool = field(default=False, repr=False)
+    
+    def get_content(self) -> Optional[str]:
+        """
+        Get file content, loading it lazily if necessary.
+        
+        Returns:
+            File content as string, or None if file couldn't be read
+        """
+        if self._content_loaded:
+            return self.content
+        
+        if self._reader is None or self._full_path is None:
+            raise ValueError("Cannot lazy-load content: no reader or path available")
+        
+        # Load content on demand
+        if self.encoding is None:
+            self.encoding = self._reader._detect_encoding(self._full_path)
+        
+        self.content = self._reader._read_content(self._full_path, self.encoding)
+        
+        if self.content is not None:
+            self.line_count = self.content.count('\n') + (1 if self.content and not self.content.endswith('\n') else 0)
+        
+        self._content_loaded = True
+        return self.content
+    
+    def get_lines(self) -> List[str]:
+        """Return file content as list of lines."""
+        content = self.get_content()
+        return content.splitlines() if content else []
+    
+    def get_preview(self, lines: int = 10) -> str:
+        """Get a preview of the file content."""
+        content = self.get_content()
+        if not content:
+            return ""
+        content_lines = content.splitlines()
+        return '\n'.join(content_lines[:lines])
+    
+    def unload_content(self):
+        """
+        Free memory by unloading content.
+        Useful when processing many files sequentially.
+        """
+        self.content = None
+        self.line_count = None
+        self._content_loaded = False
+    
+    def is_loaded(self) -> bool:
+        """Check if content has been loaded."""
+        return self._content_loaded and self.content is not None
+    
+    def __str__(self) -> str:
+        status = "loaded" if self.is_loaded() else "lazy"
+        if self.line_count:
+            return f"{self.name} ({self.line_count} lines, {self.encoding}, {status})"
+        return f"{self.name} ({self._format_size(self.size)}, {status})"
+    
+    @staticmethod
+    def _format_size(size: int) -> str:
+        """Format file size in human-readable format."""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
