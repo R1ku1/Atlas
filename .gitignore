@@ -96,8 +96,6 @@ Thumbs.db
 # AI / Model Files
 # =========================
 
-# Local model downloads
-models/
 *.gguf
 *.bin
 *.safetensors

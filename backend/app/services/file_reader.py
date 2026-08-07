@@ -69,13 +69,14 @@ class FileReader:
         self.detect_encoding = detect_encoding
         self.ignore_errors = ignore_errors
     
-    def read(self, file_path: str, base_path: Optional[str] = None) -> Optional[SourceFile]:
+    def read(self, file_path: str, base_path=None, lazy: bool = False) -> Optional[SourceFile]:
         """
         Read a source file and return its content with metadata.
         
         Args:
             file_path: Path to the file (can be relative or absolute)
             base_path: Base directory for relative paths
+            lazy: If True, don't load content into memory immediately
             
         Returns:
             SourceFile object if successful, None otherwise
@@ -104,16 +105,7 @@ class FileReader:
         if self._is_binary(full_path):
             raise ValueError(f"File appears to be binary: {full_path}")
         
-        # Detect encoding
-        encoding = self._detect_encoding(full_path) if self.detect_encoding else self.default_encoding
-        
-        # Read file content
-        content = self._read_content(full_path, encoding)
-        
-        if content is None:
-            return None
-        
-        # Create metadata
+        # Create metadata (needed for both lazy and eager modes)
         stat = os.stat(full_path)
         _, extension = os.path.splitext(full_path)
         
@@ -124,6 +116,31 @@ class FileReader:
             size=file_size,
             last_modified=stat.st_mtime
         )
+        
+        if lazy:
+            # Don't read content, don't detect encoding yet
+            return SourceFile(
+                path=metadata.path,
+                name=metadata.name,
+                extension=metadata.extension,
+                content=None,  # Will be loaded on demand
+                size=file_size,
+                encoding=None,  # Will be detected when content is loaded
+                line_count=None,  # Will be counted when content is loaded
+                metadata=metadata,
+                _full_path=full_path,  # Store for lazy loading
+                _reader=self  # Store reference to reader for lazy loading
+            )
+        
+        # Eager loading (original behavior)
+        # Detect encoding
+        encoding = self._detect_encoding(full_path) if self.detect_encoding else self.default_encoding
+        
+        # Read file content
+        content = self._read_content(full_path, encoding)
+        
+        if content is None:
+            return None
         
         # Count lines
         line_count = content.count('\n') + (1 if content and not content.endswith('\n') else 0)
@@ -136,7 +153,9 @@ class FileReader:
             size=file_size,
             encoding=encoding,
             line_count=line_count,
-            metadata=metadata
+            metadata=metadata,
+            _full_path=full_path,  # Store for potential re-reading
+            _reader=self  # Store reference to reader
         )
     
     def read_batch(
