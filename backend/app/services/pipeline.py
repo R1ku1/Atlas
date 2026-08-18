@@ -1,12 +1,15 @@
-from backend.app.services.repository_scanner import RepositoryScanner
-from services.file_reader import FileReader
-from services.code_parser import CodeParser
-from services.chunker import CodeChunker
-from services.tokenizer_adapter import EmbeddingTokenizer
-from services.python_code_splitter import PythonCodeSplitter
+from app.services.repository_scanner import RepositoryScanner
+from app.services.file_reader import FileReader, SourceFile
+from app.services.code_parser import CodeParser
+from app.services.chunker import CodeChunker
+from app.services.tokenizer_adapter import EmbeddingTokenizer
+from app.services.python_code_splitter import PythonCodeSplitter
+from app.services.indexer import Indexer
+from app.services.embedding_generator import EmbeddingGenerator
+from app.services.vector_store import VectorStore
 from typing import List
-from models.chunk import Chunk
-from services.file_reader import SourceFile
+from app.models.chunk import Chunk
+
 
 class AtlasPipeline:
     def __init__(self, max_tokens: int = 512):
@@ -17,24 +20,78 @@ class AtlasPipeline:
         self.splitter = PythonCodeSplitter(self.tokenizer, max_tokens=max_tokens, overlap_lines=3)
         self.chunker = CodeChunker(include_class_context=True, splitter=self.splitter)
 
+        self.embedder = EmbeddingGenerator()
+        self.vector_store = VectorStore()
+        self.indexer = Indexer(embedder=self.embedder, vector_store=self.vector_store)
+
+    def _process_file(self, meta, repo_path: str) -> List[Chunk]:
+        """Read, parse, and chunk a single file. Stamps each chunk with the
+        file's last_modified time so re-indexing can skip unchanged files."""
+        sf = SourceFile.from_reader(self.reader, meta, repo_path)
+        content = sf.get_content()
+        if content is None:
+            return []
+        parsed = self.parser.parse_file(content, sf.path)
+        if not parsed:
+            return []
+        chunks = self.chunker.chunk_file(parsed)
+        for chunk in chunks:
+            chunk.metadata["last_modified"] = meta.last_modified
+        return chunks
+
     def run(self, repo_path: str, lazy: bool = True) -> List[Chunk]:
-        """Process a repo and return all chunks."""
+        """Scan, parse, and chunk every file. Does not embed or store."""
         print(f"Scanning {repo_path}...")
         files_meta = self.scanner.scan(repo_path)
 
         print(f"Creating lazy file references ({len(files_meta)} files)...")
-        source_files = []
-        for meta in files_meta:
-            sf = SourceFile.from_reader(self.reader, meta, repo_path)
-            source_files.append(sf)
-
         all_chunks = []
-        for sf in source_files:
-            content = sf.get_content()
-            parsed = self.parser.parse_file(content, sf.path)
-            if parsed:
-                chunks = self.chunker.chunk_file(parsed)
-                all_chunks.extend(chunks)
+        for meta in files_meta:
+            all_chunks.extend(self._process_file(meta, repo_path))
 
         print(f"Created {len(all_chunks)} chunks.")
         return all_chunks
+
+    def index(self, repo_path: str) -> int:
+        """
+        Full pipeline: scan -> skip unchanged files -> parse -> chunk
+        -> embed -> store. Only re-processes files that are new or whose
+        last_modified time has advanced since the last index.
+        """
+        print(f"Scanning {repo_path}...")
+        files_meta = self.scanner.scan(repo_path)
+
+        indexed_files = self.vector_store.get_indexed_files()
+        current_paths = {meta.path for meta in files_meta}
+
+        # Clean up files that were indexed before but no longer exist
+        removed_paths = set(indexed_files) - current_paths
+        for path in removed_paths:
+            self.vector_store.delete_by_file(path)
+        if removed_paths:
+            print(f"Removed {len(removed_paths)} deleted file(s) from index.")
+
+        all_chunks = []
+        skipped = 0
+        for meta in files_meta:
+            prev_modified = indexed_files.get(meta.path)
+            if (
+                prev_modified is not None
+                and meta.last_modified is not None
+                and prev_modified >= meta.last_modified
+            ):
+                skipped += 1
+                continue
+
+            chunks = self._process_file(meta, repo_path)
+            # Drop old chunks for this file first — handles renamed/removed
+            # elements that would otherwise leave stale entries behind
+            self.vector_store.delete_by_file(meta.path)
+            all_chunks.extend(chunks)
+
+        print(f"{len(files_meta) - skipped} file(s) changed or new, {skipped} unchanged (skipped).")
+        print(f"Created {len(all_chunks)} chunks.")
+
+        total = self.indexer.index_chunks(all_chunks)
+        print(f"Indexing complete. Vector store now has {total} chunks.")
+        return total

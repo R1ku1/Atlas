@@ -1,8 +1,8 @@
 import hashlib
 from typing import List, Optional
-from models.chunk import Chunk
-from models.code_elements import ParsedFile
-from services.code_splitter import CodeSplitter
+from app.models.chunk import Chunk
+from app.models.code_elements import ParsedFile
+from app.services.code_splitter import CodeSplitter
 
 class CodeChunker:
     """Converts parsed code elements into semantic chunks."""

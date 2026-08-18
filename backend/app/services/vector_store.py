@@ -90,4 +90,24 @@ class VectorStore:
         parent_class = chunk.metadata.get("parent_class")
         if parent_class:
             flat["parent_class"] = parent_class
+        last_modified = chunk.metadata.get("last_modified")
+        if last_modified is not None:
+            flat["last_modified"] = last_modified
         return flat
+
+    def get_indexed_files(self) -> Dict[str, float]:
+        """
+        Return {file_path: last_modified} for every file currently
+        represented in the store, so the pipeline can skip re-indexing
+        files that haven't changed since.
+        """
+        data = self.collection.get(include=["metadatas"])
+        file_times: Dict[str, float] = {}
+        for metadata in data.get("metadatas", []):
+            file_path = metadata.get("file_path")
+            last_modified = metadata.get("last_modified")
+            if file_path is None or last_modified is None:
+                continue
+            if file_path not in file_times or last_modified > file_times[file_path]:
+                file_times[file_path] = last_modified
+        return file_times

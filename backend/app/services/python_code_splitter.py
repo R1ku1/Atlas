@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from models.code_elements import CodeElement
+from app.models.code_elements import CodeElement
 from app.services.tokenizer_adapter import EmbeddingTokenizer
 from app.services.code_splitter import CodeSplitter
 

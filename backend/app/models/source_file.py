@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
 from app.services.repository_scanner import FileMetadata
-from services.file_reader import FileReader
+from app.services.file_reader import FileReader
 import os
 
 @dataclass

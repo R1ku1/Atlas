@@ -305,7 +305,7 @@ class FileReader:
 
 # Example usage and integration with RepositoryScanner
 if __name__ == "__main__":
-    from backend.app.services.repository_scanner import RepositoryScanner
+    from app.services.repository_scanner import RepositoryScanner
     
     # Initialize both services
     scanner = RepositoryScanner()
