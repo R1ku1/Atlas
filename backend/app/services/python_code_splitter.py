@@ -113,7 +113,42 @@ class PythonCodeSplitter(CodeSplitter):
         )
 
     def _fallback_split(self, element: CodeElement) -> List[CodeElement]:
-        # If even the signature is too large, split by plain token chunks
-        # Not ideal, but we'll just split the content into fixed-token pieces
-        # (you could implement a line-based fallback similar to the old splitter)
-        return [element]  # for now, return unchanged (or implement simple split)
+        """
+        Used when even the signature exceeds max_tokens (e.g. huge decorator
+        stacks or deeply-typed signatures). Ignores the signature/body split
+        entirely and chunks the raw content by line, purely on token budget.
+        """
+        lines = element.content.splitlines()
+        segments = []
+        current_start = 0
+        current_tokens = 0
+
+        for i, line in enumerate(lines):
+            line_tokens = self.tokenizer.count_tokens(line)
+            if current_tokens + line_tokens > self.max_tokens and i > current_start:
+                segments.append((current_start, i))
+                overlap_start = max(current_start, i - self.overlap_lines)
+                current_start = overlap_start
+                current_tokens = sum(
+                    self.tokenizer.count_tokens(lines[j]) for j in range(overlap_start, i)
+                )
+            current_tokens += line_tokens
+
+        if current_start < len(lines):
+            segments.append((current_start, len(lines)))
+
+        if not segments:
+            # Single line somehow exceeds max_tokens on its own — nothing more we can do
+            return [element]
+
+        new_elements = []
+        for start_idx, end_idx in segments:
+            seg_text = "\n".join(lines[start_idx:end_idx])
+            new_elem = self._create_element_copy(
+                element, seg_text,
+                start_line=element.start_line + start_idx,
+                end_line=element.start_line + end_idx - 1
+            )
+            new_elements.append(new_elem)
+
+        return new_elements
