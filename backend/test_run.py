@@ -7,7 +7,7 @@ from app.services.pipeline import AtlasPipeline
 from app.services.search import SearchService
 from app.services.chat_service import ChatService
 
-REPO_PATH = r"C:\Users\aweso\Documents\Rainmeter\Skins\EdgeDock\Icons"# <- point this at a real small-ish repo
+REPO_PATH = r"C:\Users\aweso\Documents\projects\Atlas"# <- point this at a real small-ish repo
 
 def main():
     pipeline = AtlasPipeline()

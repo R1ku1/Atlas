@@ -22,7 +22,9 @@ class BaseParser(ABC):
         ext_map = {
             '.py': 'python',
             '.js': 'javascript',
+            '.jsx': 'javascript',
             '.ts': 'typescript',
+            '.tsx': 'tsx',
             '.java': 'java',
             '.cpp': 'cpp',
             '.c': 'c',
@@ -31,3 +33,5 @@ class BaseParser(ABC):
         }
         ext = Path(file_path).suffix.lower()
         return ext_map.get(ext)
+
+    

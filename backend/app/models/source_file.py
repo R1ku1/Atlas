@@ -106,3 +106,24 @@ class SourceFile:
             _reader=reader,
             _content_loaded=False,
         )
+
+    @classmethod
+    def from_reader(cls, reader: 'FileReader', metadata: 'FileMetadata', repo_path: str) -> 'SourceFile':
+        """
+        Build a lazily-loaded SourceFile from scan metadata, without reading
+        the file yet. Content is read on first call to get_content().
+        """
+        full_path = os.path.join(repo_path, metadata.path)
+        return cls(
+            path=metadata.path,
+            name=metadata.name,
+            extension=metadata.extension,
+            size=metadata.size,
+            metadata=metadata,
+            content=None,
+            encoding=None,
+            line_count=None,
+            _full_path=full_path,
+            _reader=reader,
+            _content_loaded=False,
+        )

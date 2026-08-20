@@ -1,5 +1,5 @@
 from app.services.repository_scanner import RepositoryScanner
-from app.services.file_reader import FileReader, SourceFile
+from app.services.file_reader import FileReader
 from app.services.code_parser import CodeParser
 from app.services.chunker import CodeChunker
 from app.services.tokenizer_adapter import EmbeddingTokenizer
@@ -9,6 +9,7 @@ from app.services.embedding_generator import EmbeddingGenerator
 from app.services.vector_store import VectorStore
 from typing import List
 from app.models.chunk import Chunk
+from app.models.source_file import SourceFile
 
 
 class AtlasPipeline:

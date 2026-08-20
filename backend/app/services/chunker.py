@@ -49,7 +49,8 @@ class CodeChunker:
                        segment_index: Optional[int] = None,
                        total_segments: Optional[int] = None) -> Chunk:
         """Build a single chunk from a code element (or one segment of a split element)."""
-        raw_id = f"{parsed_file.file_path}:{element.name}:{element.type}"
+        parent_part = f":{element.parent_class}" if element.parent_class else ""
+        raw_id = f"{parsed_file.file_path}:{element.name}:{element.type}{parent_part}:{element.start_line}"
         if segment_index is not None:
             raw_id += f":seg{segment_index}"
         chunk_id = hashlib.md5(raw_id.encode()).hexdigest()[:12]

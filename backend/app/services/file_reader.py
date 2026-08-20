@@ -1,36 +1,51 @@
-import os
-import chardet
-from typing import Dict, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional, List, TYPE_CHECKING
 from app.services.repository_scanner import FileMetadata
+import chardet
+import os
 
+
+if TYPE_CHECKING:
+    from app.services.file_reader import FileReader
 
 @dataclass
 class SourceFile:
-    """Represents a source file with its content and metadata."""
+    """Represents a source file with optional lazy-loaded content."""
     path: str
     name: str
     extension: str
-    content: str
     size: int
-    encoding: str
-    line_count: int
-    metadata: FileMetadata
-    
-    def __str__(self) -> str:
-        preview = self.content[:100].replace('\n', '\\n')
-        return f"{self.name} ({self.line_count} lines, {self.encoding})"
-    
-    def get_lines(self) -> List[str]:
-        """Return file content as list of lines."""
-        return self.content.splitlines()
-    
-    def get_preview(self, lines: int = 10) -> str:
-        """Get a preview of the file content."""
-        content_lines = self.get_lines()
-        return '\n'.join(content_lines[:lines])
+    metadata: 'FileMetadata'
 
+    content: Optional[str] = None
+    encoding: Optional[str] = None
+    line_count: Optional[int] = None
 
+    _full_path: Optional[str] = field(default=None, repr=False)
+    _reader: Optional['FileReader'] = field(default=None, repr=False)
+    _content_loaded: bool = field(default=False, repr=False)
+
+    @classmethod
+    def from_reader(cls, reader: 'FileReader', metadata: 'FileMetadata', repo_path: str) -> 'SourceFile':
+        """
+        Build a lazily-loaded SourceFile from scan metadata, without reading
+        the file yet. Content is read on first call to get_content().
+        """
+        full_path = os.path.join(repo_path, metadata.path)
+        return cls(
+            path=metadata.path,
+            name=metadata.name,
+            extension=metadata.extension,
+            size=metadata.size,
+            metadata=metadata,
+            content=None,
+            encoding=None,
+            line_count=None,
+            _full_path=full_path,
+            _reader=reader,
+            _content_loaded=False,
+        )
+    
 class FileReader:
     """
     Reads source files and returns their content with metadata.

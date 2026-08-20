@@ -3,13 +3,15 @@ from app.models.code_elements import ParsedFile
 from app.services.parsers.base_parser import BaseParser
 from app.services.parsers.python_parser import PythonParser
 from app.services.parsers.javascript_parser import JavaScriptParser
+from app.services.parsers.typescript_parser import TypeScriptParser
 
 class CodeParser:
     def __init__(self):
         self.parsers: Dict[str, BaseParser] = {
             'python': PythonParser(),
             'javascript': JavaScriptParser(),
-            # future: 'typescript': ..., 'java': JavaParser(), 'cpp': CppParser()
+            'typescript': TypeScriptParser(tsx=False),
+            'tsx': TypeScriptParser(tsx=True),
         }
 
     def parse_file(self, source_code: str, file_path: str) -> Optional[ParsedFile]:
