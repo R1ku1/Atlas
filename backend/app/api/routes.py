@@ -3,12 +3,10 @@ from pydantic import BaseModel
 from app.services.pipeline import AtlasPipeline
 from app.services.search import SearchService
 from app.services.chat_service import ChatService
+from app.services.folder_dialog import open_folder_dialog
 
 router = APIRouter(prefix="/api/v1")
 
-# One shared pipeline/search/chat instance per process. Safe to share across
-# requests: VectorStore is a persistent on-disk Chroma client, EmbeddingGenerator
-# and ChatService are just stateless HTTP callers to Ollama.
 pipeline = AtlasPipeline()
 search_service = SearchService(embedder=pipeline.embedder, vector_store=pipeline.vector_store)
 chat_service = ChatService(search_service=search_service)
@@ -23,6 +21,26 @@ class SearchRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     question: str
+
+
+@router.get("/browse-folder")
+def browse_folder():
+    """
+    Opens a native folder-browser dialog on the machine running the
+    backend and returns the selected path. Only makes sense for a
+    local, single-user setup (this dialog pops up on the server's
+    desktop, not the browser's) - which matches how Atlas runs.
+    """
+    try:
+        path = open_folder_dialog()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not open folder dialog: {e}")
+
+    if not path:
+        # user closed the dialog without picking anything - not a real error
+        raise HTTPException(status_code=400, detail="No folder selected")
+
+    return {"status": "success", "path": path}
 
 
 @router.post("/index")

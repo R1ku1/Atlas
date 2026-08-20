@@ -1,0 +1,552 @@
+/* ============================================================
+   Design tokens
+   ============================================================ */
+:root {
+  --bg: #12161c;
+  --panel: #181d25;
+  --panel-raised: #1e2430;
+  --grid-line: #232a35;
+  --border: #2e3644;
+  --text: #e7e4da;
+  --text-dim: #9ba3b0;
+  --text-faint: #5c6472;
+
+  --teal: #4fa69c;
+  --teal-dim: #3a7d76;
+  --brass: #c9a227;
+  --red: #c4432b;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+
+  --radius: 3px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  /* faint survey-paper grid, purely atmospheric, low contrast */
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--teal-dim);
+  color: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   App shell
+   ============================================================ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+.wordmark em {
+  font-style: normal;
+  color: var(--teal);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 780px) {
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Survey panel (left rail)
+   ============================================================ */
+.survey {
+  border-right: 1px solid var(--border);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+@media (max-width: 780px) {
+  .survey {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.survey-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.survey-section-label::before {
+  content: '';
+  width: 8px;
+  height: 1px;
+  background: var(--text-faint);
+}
+
+.repo-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.repo-input {
+  width: 100%;
+  min-width: 0; /* let it shrink below content width instead of overflowing the row */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo-input::placeholder {
+  color: var(--text-faint);
+}
+
+.browse-btn {
+  flex-shrink: 0;
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.browse-btn:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.browse-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.index-btn {
+  margin-top: 8px;
+  width: 100%;
+  background: var(--teal-dim);
+  border: 1px solid var(--teal);
+  border-radius: var(--radius);
+  color: #0d1512;
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.index-btn:hover:not(:disabled) {
+  background: var(--teal);
+}
+
+.index-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+}
+
+.legend-key {
+  color: var(--text-dim);
+}
+
+.legend-value {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.legend-empty {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.status-line {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-line.error {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(196, 67, 43, 0.08);
+}
+
+.status-line.ok {
+  color: var(--teal);
+  border-color: var(--teal-dim);
+  background: rgba(79, 166, 156, 0.08);
+}
+
+/* ============================================================
+   Main pane + instrument tabs
+   ============================================================ */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 22px 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 12.5px;
+  padding: 7px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tab .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--text-faint);
+}
+
+.tab.active {
+  color: var(--text);
+  border-color: var(--teal);
+  background: rgba(79, 166, 156, 0.08);
+}
+
+.tab.active .dot {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.query-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.query-input {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 11px 13px;
+  font-size: 14px;
+}
+
+.query-input::placeholder {
+  color: var(--text-faint);
+}
+
+.query-submit {
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.query-submit:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.query-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.results-heading {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 12px;
+}
+
+.empty-state {
+  color: var(--text-faint);
+  font-size: 13px;
+  padding: 30px 0;
+  font-style: italic;
+}
+
+/* ============================================================
+   Gazetteer entry — the signature element.
+   Name, dotted leader, monospace grid reference — the back-of-
+   atlas index format applied to a code chunk's location.
+   ============================================================ */
+.gazetteer-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.gazetteer-entry {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--grid-line);
+}
+
+.gazetteer-entry:first-child {
+  padding-top: 0;
+}
+
+.gazetteer-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0; /* required for children's overflow rules to actually clip in a flex row */
+}
+
+.gazetteer-name {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 45%;
+}
+
+.gazetteer-leader {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 1px dotted var(--text-faint);
+  height: 0;
+  transform: translateY(-4px);
+}
+
+.gazetteer-ref {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--teal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 55%;
+  /* truncate from the LEFT instead of the right — for a file path, the
+     tail (filename:line) is the useful part, the leading directories are
+     the least informative when space is tight */
+  direction: rtl;
+  text-align: left;
+  unicode-bidi: plaintext;
+}
+
+.gazetteer-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+}
+
+.tag.brass {
+  color: var(--brass);
+  border-color: rgba(201, 162, 39, 0.4);
+}
+
+.bearing {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+.gazetteer-snippet {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--panel);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   Chat / field notes
+   ============================================================ */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.note {
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+
+.note-index {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.note-question {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.note-answer {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.note-sources-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 14px 0 6px;
+}
+
+.note.pending .note-answer {
+  color: var(--text-faint);
+  font-style: italic;
+}
