@@ -1,5 +1,5 @@
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.services.search import SearchService
 
 
@@ -18,14 +18,19 @@ class ChatService:
         self.base_url = base_url.rstrip("/")
         self.top_k = top_k
 
-    def ask(self, question: str) -> Dict[str, Any]:
+    def ask(self, question: str, repo_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Retrieve relevant chunks and generate an answer grounded in them.
+
+        Args:
+            repo_path: scopes retrieval to one repository. Without it,
+                context is pulled from every repo ever indexed, which is
+                how answers end up citing unrelated projects.
 
         Returns:
             Dict with "answer" and "sources" (the retrieved chunks used).
         """
-        results = self.search_service.search(question, top_k=self.top_k)
+        results = self.search_service.search(question, top_k=self.top_k, repo_path=repo_path)
 
         prompt = self._build_prompt(question, results)
         answer = self._generate(prompt)
@@ -33,6 +38,15 @@ class ChatService:
         return {"answer": answer, "sources": results}
 
     def _build_prompt(self, question: str, results: List[Dict[str, Any]]) -> str:
+        if not results:
+            return (
+                "You are a helpful assistant answering questions about a codebase. "
+                "No relevant code context was found for this question - say so plainly "
+                "instead of guessing.\n\n"
+                f"Question: {question}\n"
+                "Answer:"
+            )
+
         context_blocks = []
         for r in results:
             meta = r["metadata"]

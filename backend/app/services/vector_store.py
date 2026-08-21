@@ -40,16 +40,26 @@ class VectorStore:
             metadatas=metadatas,
         )
 
-    def query(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def query(self, query_embedding: List[float], top_k: int = 5,
+              repo_path: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Find the top_k most similar chunks to a query embedding.
+
+        Args:
+            repo_path: if given, only search chunks from this repository.
+                Without it, the query runs across every repo ever indexed
+                into this store, which will surface unrelated results from
+                other projects you've previously indexed.
 
         Returns:
             List of dicts with chunk_id, content, metadata, and distance.
         """
+        where = {"repo_path": repo_path} if repo_path else None
+
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
+            where=where,
         )
 
         hits = []
@@ -67,41 +77,33 @@ class VectorStore:
             })
         return hits
 
-    def delete_by_file(self, file_path: str) -> None:
-        """Delete all chunks belonging to a given file (for re-indexing)."""
-        self.collection.delete(where={"file_path": file_path})
-
-    def count(self) -> int:
-        return self.collection.count()
-
-    def _build_metadata(self, chunk: Chunk) -> Dict[str, Any]:
+    def delete_by_file(self, file_path: str, repo_path: Optional[str] = None) -> None:
         """
-        Flatten chunk metadata for Chroma, which requires primitive
-        (str/int/float/bool) values only — no nested dicts or lists.
-        """
-        flat = {
-            "file_path": chunk.file_path,
-            "element_type": chunk.element_type,
-            "name": chunk.name,
-            "language": chunk.language,
-            "start_line": chunk.start_line,
-            "end_line": chunk.end_line,
-        }
-        parent_class = chunk.metadata.get("parent_class")
-        if parent_class:
-            flat["parent_class"] = parent_class
-        last_modified = chunk.metadata.get("last_modified")
-        if last_modified is not None:
-            flat["last_modified"] = last_modified
-        return flat
+        Delete all chunks belonging to a given file (for re-indexing).
 
-    def get_indexed_files(self) -> Dict[str, float]:
+        repo_path scopes the delete to one repository. Without it, ANY
+        repo that happens to have a file at this same relative path gets
+        wiped too - always pass repo_path when re-indexing a specific repo.
+        """
+        if repo_path:
+            self.collection.delete(where={"$and": [{"file_path": file_path}, {"repo_path": repo_path}]})
+        else:
+            self.collection.delete(where={"file_path": file_path})
+
+    def delete_by_repo(self, repo_path: str) -> None:
+        """Remove every chunk belonging to a given repository entirely."""
+        self.collection.delete(where={"repo_path": repo_path})
+
+    def get_indexed_files(self, repo_path: str) -> Dict[str, float]:
         """
         Return {file_path: last_modified} for every file currently
-        represented in the store, so the pipeline can skip re-indexing
-        files that haven't changed since.
+        indexed under a given repository, so the pipeline can skip
+        re-indexing files that haven't changed since. Scoped to one
+        repo_path - without this scoping, files from unrelated repos
+        that happen to share a relative path would be compared as if
+        they were the same file.
         """
-        data = self.collection.get(include=["metadatas"])
+        data = self.collection.get(where={"repo_path": repo_path}, include=["metadatas"])
         file_times: Dict[str, float] = {}
         for metadata in data.get("metadatas", []):
             file_path = metadata.get("file_path")
@@ -111,3 +113,33 @@ class VectorStore:
             if file_path not in file_times or last_modified > file_times[file_path]:
                 file_times[file_path] = last_modified
         return file_times
+
+    def count(self, repo_path: Optional[str] = None) -> int:
+        if repo_path:
+            data = self.collection.get(where={"repo_path": repo_path}, include=[])
+            return len(data.get("ids", []))
+        return self.collection.count()
+
+    def _build_metadata(self, chunk: Chunk) -> Dict[str, Any]:
+        """
+        Flatten chunk metadata for Chroma, which requires primitive
+        (str/int/float/bool) values only - no nested dicts or lists.
+        """
+        flat = {
+            "file_path": chunk.file_path,
+            "element_type": chunk.element_type,
+            "name": chunk.name,
+            "language": chunk.language,
+            "start_line": chunk.start_line,
+            "end_line": chunk.end_line,
+        }
+        repo_path = chunk.metadata.get("repo_path")
+        if repo_path:
+            flat["repo_path"] = repo_path
+        parent_class = chunk.metadata.get("parent_class")
+        if parent_class:
+            flat["parent_class"] = parent_class
+        last_modified = chunk.metadata.get("last_modified")
+        if last_modified is not None:
+            flat["last_modified"] = last_modified
+        return flat

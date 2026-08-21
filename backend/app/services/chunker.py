@@ -11,25 +11,32 @@ class CodeChunker:
         self.include_class_context = include_class_context
         self.splitter = splitter  # optional: splits oversized elements before chunking
 
-    def chunk_file(self, parsed_file: ParsedFile) -> List[Chunk]:
-        """Create chunks for a single parsed file."""
+    def chunk_file(self, parsed_file: ParsedFile, repo_path: str) -> List[Chunk]:
+        """
+        Create chunks for a single parsed file.
+
+        repo_path scopes every chunk to the repository it came from -
+        it's folded into the chunk_id hash (so two different repos can
+        never collide on the same ID) and stored in metadata (so search
+        and cleanup can be filtered to one repo at a time).
+        """
         chunks = []
         for cls in parsed_file.classes:
-            chunks.extend(self._create_chunks(cls, parsed_file, extra_context=None))
+            chunks.extend(self._create_chunks(cls, parsed_file, repo_path, extra_context=None))
 
             methods = [m for m in parsed_file.methods if m.parent_class == cls.name]
             for method in methods:
                 chunks.extend(self._create_chunks(
-                    method, parsed_file,
+                    method, parsed_file, repo_path,
                     extra_context=cls if self.include_class_context else None
                 ))
 
         for func in parsed_file.functions:
-            chunks.extend(self._create_chunks(func, parsed_file, extra_context=None))
+            chunks.extend(self._create_chunks(func, parsed_file, repo_path, extra_context=None))
 
         return chunks
 
-    def _create_chunks(self, element, parsed_file: ParsedFile, extra_context=None) -> List[Chunk]:
+    def _create_chunks(self, element, parsed_file: ParsedFile, repo_path: str, extra_context=None) -> List[Chunk]:
         """Split an element if needed, then build a chunk per resulting piece."""
         elements = self.splitter.split(element) if self.splitter else [element]
         total = len(elements)
@@ -37,7 +44,7 @@ class CodeChunker:
         chunks = []
         for i, sub_element in enumerate(elements):
             chunk = self._create_chunk(
-                sub_element, parsed_file, extra_context,
+                sub_element, parsed_file, repo_path, extra_context,
                 segment_index=i if total > 1 else None,
                 total_segments=total if total > 1 else None,
             )
@@ -45,12 +52,15 @@ class CodeChunker:
                 chunks.append(chunk)
         return chunks
 
-    def _create_chunk(self, element, parsed_file: ParsedFile, extra_context=None,
+    def _create_chunk(self, element, parsed_file: ParsedFile, repo_path: str, extra_context=None,
                        segment_index: Optional[int] = None,
                        total_segments: Optional[int] = None) -> Chunk:
         """Build a single chunk from a code element (or one segment of a split element)."""
         parent_part = f":{element.parent_class}" if element.parent_class else ""
-        raw_id = f"{parsed_file.file_path}:{element.name}:{element.type}{parent_part}:{element.start_line}"
+        # repo_path is included first so two repos can never produce the same
+        # chunk_id even if they happen to share identical relative paths and
+        # element names/lines (e.g. two projects both having src/index.ts:main).
+        raw_id = f"{repo_path}:{parsed_file.file_path}:{element.name}:{element.type}{parent_part}:{element.start_line}"
         if segment_index is not None:
             raw_id += f":seg{segment_index}"
         chunk_id = hashlib.md5(raw_id.encode()).hexdigest()[:12]
@@ -84,6 +94,7 @@ class CodeChunker:
             file_path=parsed_file.file_path,
             language=parsed_file.language,
             metadata={
+                "repo_path": repo_path,
                 "parent_class": element.parent_class,
                 "parameters": element.parameters,
                 "return_type": element.return_type,
